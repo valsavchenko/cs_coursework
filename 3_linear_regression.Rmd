@@ -1,0 +1,143 @@
+---
+title: "Linear Regresiion"
+author: "Valentine Savchenko"
+date: "July 3, 2016"
+output: html_document
+---
+
+```{r, setoptions, echo = F, warning = F}
+library(knitr)
+opts_chunk$set(echo = T)
+opts_chunk$set(warning = F)
+opts_chunk$set(message = F)
+set.seed(3741)
+```
+
+## Exercise 1
+Describe the null hypotheses to which the p-values given in Table 3.4 correspond. Explain what conclusions you can draw based on these p-values. Your explanation should be phrased in terms of sales, TV, radio, and newspaper, rather than in terms of the coefficients of the linear model.
+
+```{r, verbose = F}
+download.file(url = "http://www-bcf.usc.edu/~gareth/ISL/Advertising.csv", destfile = "Advertising.csv")
+Advertising <- read.table(file = "Advertising.csv", header = T, sep =",")
+model <- lm(Sales ~ TV + Radio + Newspaper, data = Advertising)
+summary(model)
+```
+
+*Null hypotheses would be that there is no relationship to exist between sales and TV, radio, newspaper advertising. Which holds only for relations between sales and newspaper advertisement.*
+
+*The model shows that putting extra 1000 USD into TV advertisement will result in plus 45 items sold, into radio - 188.*
+
+## Exercise 2
+Carefully explain the differences between the KNN classifier and KNN regression methods
+
+*The classsifier deals with qualitative (categorical) responses whereas the regression method with quantitative responses.*
+
+## Exercise 3
+Suppose we have a data set with five predictors, $X_1$ = GPA, $X_2$ = IQ, $X_3$ = Gender (1 for Female and 0 for Male), $X_4$ = Interaction between GPA and IQ, and $X_5$ = Interaction between GPA and Gender. The response is starting salary after graduation (in thousands of dollars).
+
+***salary** = $\beta_0$ + $\beta_1$ x **GPA** + $\beta_2$ x **IQ** + $\beta_3$ x **Gender** + $\beta_4$ x **GPA** x **IQ** + $\beta_5$ x **GPA** x **Gender***
+
+*Or for females*
+
+***salary** = ($\beta_0$ + $\beta_3$) + ($\beta_1$ + $\beta_5$) x **GPA** + $\beta_2$ x **IQ** + $\beta_4$ x **GPA** x **IQ***
+
+*And for males*
+
+***salary** = $\beta_0$ + $\beta_1$ x **GPA** + $\beta_2$ x **IQ** + $\beta_4$ x **GPA** x **IQ***
+
+Suppose we use least squares to fit the model, and get $\hat\beta_0$ = 50, $\hat\beta_1$ = 20, $\hat\beta_2$ = 0.07, $\hat\beta_3$ = 35, $\hat\beta_4$ = 0.01, $\hat\beta_5$ = -10.
+
+1. Which answer is correct, and why?
+  + For a fixed value of IQ and GPA, males earn more on average than females.
+  
+    *Incorrect, since intercept for female salary is $\beta_0$ + $\beta_3$ = 50 + 35 = 85, whereas for males just $\beta_0$ = 50*
+  + For a fixed value of IQ and GPA, females earn more on average than males.
+  
+    *Correct, see previous answer*
+  + For a fixed value of IQ and GPA, males earn more on average than females provided that the GPA is high enough.
+  
+    *Correct, since fit for females gives*
+    
+    ***salary** = (50 + 35) + (20 - 10) x **GPA** + 0.07 x **IQ** + 0.01 x **GPA** x **IQ** = 85 + 10 x **GPA** + 0.07 x **IQ** + 0.01 x **GPA** x **IQ**,*
+    
+    *whereas for males*
+    
+    *50 + 20 x **GPA** + 0.07 x **IQ**  + 0.01 x **GPA** x **IQ***
+  + For a fixed value of IQ and GPA, females earn more on average than males provided that the GPA is high enough.
+  
+    *Incorrect, see previous answer*
+2. Predict the salary of a female with IQ of 110 and a GPA of 4.0.
+
+```{r}
+IQ = 110
+GPA = 4.0
+salary = 85 + 10 * GPA + 0.07 * IQ + 0.01 * GPA * IQ
+salary
+```
+
+3. True or false: Since the coefficient for the GPA/IQ interaction term is very small, there is very little evidence of an interaction effect. Justify your answer.
+
+*false, since there is no p-value for the interaction term given*
+
+## Exercise 4
+I collect a set of data (n = 100 observations) containing a single predictor and a quantitative response. I then fit a linear regression model to the data, as well as a separate cubic regression, i.e. $Y = \beta_0 + \beta_1X + \beta_2X^2 + \beta_3X^3 + \epsilon$.
+
+1. Suppose that the true relationship between X and Y is linear, i.e. $Y = \beta_0 + \beta_1X + \epsilon$. Consider the training residual sum of squares (RSS) for the linear regression, and also the training RSS for the cubic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.
+
+```{r}
+b0 <- 3
+b1 <- 7
+n = 100
+X <- c(1:n)
+
+sds <- c(0, 0.1, 1, 5, 10, 20, 50, 100)
+trainingRSS <- c()
+for (sd in sds) {
+  Y <- b0 + b1 * X + rnorm(n, mean = 0, sd = 100)
+  lnrMdl <- lm(Y ~ X)
+  cbcMdl <- lm(Y ~ poly(X, 3))
+  lnrRSS <- sum(resid(lnrMdl)^2)
+  cbcRSS <- sum(resid(cbcMdl)^2)
+  append(trainingRSS, lnrRSS - cbcRSS)
+}
+
+plot(sds, trainingRSS)
+```
+
+*RSS for cubic model is expected to be lower, since that this model adapts better to $\epsilon$.*
+
+2. Answer (1) using test rather than training RSS.
+
+```{r}
+b0 <- 5
+b1 <- 12
+n = 100
+
+X <- c(1:n)
+train <- X %in% sample(X, n/2)
+Xtrain <- X[train]
+
+sds <- c(0, 0.1, 1, 5, 10, 20, 50, 100)
+testRSS <- c()
+for (sd in sds) {
+  Y <- b0 + b1 * X + rnorm(n, mean = 0, sd = 100)
+  Ytrain <- Y[train]
+  
+  lnrMdl <- lm(Ytrain ~ Xtrain)
+  cbcMdl <- lm(Ytrain ~ poly(Xtrain, 3))
+  
+  predLnr <- predict(lnrMdl, data.frame(X[!train]))
+  predCbc <- predict(cbcMdl, data.frame(X[!train]))
+  
+  lnrRSS <- sum((Y[!train] - predLnr)^2)
+  cbcRSS <- sum((Y[!train] - predCbc)^2)
+  
+  append(testRSS, lnrRSS - cbcRSS)
+}
+
+plot(sds, testRSS)
+```
+
+3. Suppose that the true relationship between X and Y is not linear, but we don't know how far it is from linear. Consider the training RSS for the linear regression, and also the training RSS for the cubic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.
+
+4. Answer (3) using test rather than training RSS.
