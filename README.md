@@ -1,2 +1,1 @@
-# cs_coursework
-Some CS courcework
+Some coursework on a brought range of computer science subjects
