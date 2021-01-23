@@ -17,9 +17,12 @@ set.seed(3741)
 Describe the null hypotheses to which the p-values given in Table 3.4 correspond. Explain what conclusions you can draw based on these p-values. Your explanation should be phrased in terms of sales, TV, radio, and newspaper, rather than in terms of the coefficients of the linear model.
 
 ```{r, verbose = F}
-download.file(url = "http://faculty.marshall.usc.edu/gareth-james/ISL/Advertising.csv", destfile = "Advertising.csv")
+originalUrl <- "http://faculty.marshall.usc.edu/gareth-james/ISL/Advertising.csv"
+url <- "https://raw.githubusercontent.com/lneisenman/isl/master/data/Advertising.csv"
+
+download.file(url = url, destfile = "Advertising.csv")
 Advertising <- read.table(file = "Advertising.csv", header = T, sep =",")
-model <- lm(sales ~ TV + radio + newspaper, data = Advertising)
+model <- lm(Sales ~ TV + Radio + Newspaper, data = Advertising)
 summary(model)
 ```
 
