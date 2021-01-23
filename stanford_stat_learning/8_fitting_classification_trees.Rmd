@@ -1,0 +1,94 @@
+---
+title: "Fitting Classification Trees"
+author: "Valentin Savchenko"
+date: "1/23/2021"
+output: html_document
+---
+
+```{r, setoptions, echo = F, warning = F}
+library(knitr)
+opts_chunk$set(echo = T)
+opts_chunk$set(warning = F)
+opts_chunk$set(message = F)
+set.seed(3)
+
+library(tree)
+library(dplyr)
+library(tibble)
+```
+
+Load the Carseats dataset and preview its content:
+```{r}
+library(ISLR)
+attach(Carseats)
+head(Carseats)
+```
+
+Introduce a binary variable High, which signals whether sales considered high: 
+```{r}
+carseats <- as_tibble(Carseats) %>% mutate(High=as.factor(Sales>8))
+head(carseats)
+```
+
+Split available data into training and test sets:
+```{r}
+trainSize <- 0.5 * nrow(carseats)
+trainSize
+trainIdx <- sample(1:nrow(carseats), trainSize)
+testCarseats <- carseats[-trainIdx, ]
+```
+
+Fit a decision tree to predict whether sales are high based on all original predictors:
+```{r}
+model <- tree(High ~.- Sales, carseats, subset=trainIdx)
+summary(model)
+plot(model)
+text(model, pretty=0)
+```
+
+Evaluate quality of the tree on the test set:
+```{r}
+predictions <- predict(model, testCarseats, type="class")
+table(predictions, testCarseats$High)
+correctPredictions <- sum(predictions == testCarseats$High) / nrow(testCarseats)
+correctPredictions
+```
+
+Attempt to improve quality of the model. Perform cross-validation in order to determine the optimal level of tree complexity. Guide the cross-validation and prunning process by the classification error rate:
+```{r}
+crossValidation <- cv.tree(model, FUN=prune.misclass)
+names(crossValidation)
+```
+
+Determine the number of terminal nodes that results in the lowest cross-validation error rate:
+```{r}
+crossValidation$dev
+optimalSizeId <- which.min(crossValidation$dev)
+
+crossValidation$size
+optimalSize <- crossValidation$size[optimalSizeId]
+optimalSize
+```
+
+Plot the error rate as a function of both the number of terminal nodes of each tree considered and the value of the cost-complexity parameter used:
+```{r}
+par(mfrow =c(1,2))
+plot(crossValidation$size, crossValidation$dev, type="b")
+plot(crossValidation$k, crossValidation$dev, type="b")
+```
+
+Prune the original tree:
+```{r}
+pruneModel <- prune.misclass(model, best=optimalSize)
+summary(pruneModel)
+plot(pruneModel)
+text(pruneModel, pretty=0)
+```
+
+Evaluate performance of the pruned tree:
+```{r}
+prunePredictions <- predict(pruneModel, testCarseats, type="class")
+table(prunePredictions, testCarseats$High)
+correctPrunePredictions <- sum(prunePredictions == testCarseats$High) / nrow(testCarseats)
+correctPrunePredictions
+```
